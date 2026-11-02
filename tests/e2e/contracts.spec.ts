@@ -1,0 +1,70 @@
+import { test, expect } from '@playwright/test';
+import { mkdir } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+async function snapshot(page: import('@playwright/test').Page, path: string) {
+  await page.evaluate(() => { (document.activeElement as HTMLElement)?.blur(); window.scrollTo(0, 0); });
+  await page.screenshot({ path, fullPage: true });
+}
+
+test('chapter 07 keeps normal and counterexample states separate offline', async ({ page, context }, info) => {
+  await context.setOffline(true);
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto(pathToFileURL(resolve('index.html')).href + '#/07');
+  await page.getByRole('button', { name: '内部代码写错', exact: true }).click();
+  await expect(page.locator('.contract-takeaway')).toContainText('TypeError');
+  await page.getByRole('button', { name: '02 正常与反例', exact: true }).click();
+  await expect(page.locator('.sample-nav button')).toHaveCount(6); // Five lessons plus free lab.
+  const run = page.getByRole('button', { name: '运行这个输入', exact: true });
+  const result = page.locator('.contract-result');
+  await run.click();
+  await expect(result).toContainText('抛出 TaskInputError');
+  await expect(result).toContainText('JSONDecodeError');
+  await page.getByText('试试错误写法：把所有失败变成 0', { exact: true }).click();
+  const toggle = page.getByRole('checkbox', { name: '进入错误副本：except Exception 后返回 0', exact: true });
+  await toggle.focus(); await page.keyboard.press('Space');
+  await expect(toggle).toBeChecked();
+  await run.click();
+  await expect(result).toContainText('正常返回 0');
+  await expect(result).toContainText('错误被吃掉了');
+  await expect(page.locator('.counterexample-on')).toBeVisible();
+  await mkdir('docs/qa/contracts', { recursive: true });
+  await snapshot(page, `docs/qa/contracts/${info.project.name}-counter.png`);
+  await page.getByRole('button', { name: '合法的 0', exact: true }).click();
+  await run.click();
+  await expect(result).toContainText('正常返回 0');
+  await expect(result).toContainText('确实完成');
+  await toggle.uncheck();
+  await expect(result).toContainText('抛出 TaskInputError');
+  await expect(page.getByRole('button', { name: '损坏的 JSON', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '内部代码写错', exact: true }).click();
+  await run.click();
+  await expect(result).toContainText('抛出 TypeError');
+  await toggle.check();
+  await expect(page.getByRole('button', { name: '合法的 0', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(result).toContainText('正常返回 0');
+  await page.getByRole('button', { name: '重置两份实验', exact: true }).click();
+  await expect(toggle).not.toBeChecked();
+  await expect(page.locator('.contract-mode')).toHaveText('正常实验');
+  await expect(result).toContainText('先选输入');
+  await expect(page.locator('.contract-run-count')).toHaveText('本模式已运行 0 次');
+  await toggle.check();
+  await expect(result).toContainText('先选输入');
+  await expect(page.locator('.contract-run-count')).toHaveText('本模式已运行 0 次');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: '03 结构化异常', exact: true }).click();
+  await page.getByRole('button', { name: '中文消息', exact: true }).click();
+  await expect(page.locator('.contract-message')).toContainText('value 必须是整数');
+  await expect(page.locator('.contract-fields')).toContainText('task-7');
+  await expect(page.locator('.contract-field-action')).toContainText('value');
+  await snapshot(page, `docs/qa/contracts/${info.project.name}-fields.png`);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole('button', { name: '04 自己动手', exact: true }).click();
+  await expect(page.locator('.quiz')).toBeVisible();
+  await page.getByRole('button', { name: '05 回顾', exact: true }).click();
+  await expect(page.locator('.sample-recap-grid>div')).toHaveCount(3);
+  await page.getByRole('button', { name: '自由实验', exact: true }).click();
+  await expect(page.locator('[data-scenario-id="07-contract"]')).toBeVisible();
+  expect(errors).toEqual([]);
+});

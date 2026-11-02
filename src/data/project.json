@@ -1,0 +1,304 @@
+{
+  "pythonVersion": "3.11.15",
+  "entry": [
+    {
+      "id": "valid",
+      "label": "合法 JSON：整批校验后执行",
+      "text": "[{\"id\":\"a\",\"value\":2},{\"id\":\"b\",\"value\":3}]",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import InputError, Processor, parse_tasks\n\ntext = '[{\"id\":\"a\",\"value\":2},{\"id\":\"b\",\"value\":3}]'\ncalls = []\ndef worker(task):\n    calls.append(task.id)\n    return task.value * 2\ntry:\n    tasks = parse_tasks(text)\nexcept InputError as error:\n    observation = {\"accepted\": False, \"tasks\": [], \"calls\": calls,\n                   \"error\": type(error).__name__,\n                   \"cause\": type(error.__cause__).__name__ if error.__cause__ else None,\n                   \"notes\": list(getattr(error, \"__notes__\", []))}\nelse:\n    results = Processor(worker).process_batch(tasks)\n    observation = {\"accepted\": True, \"tasks\": [{\"id\": t.id, \"value\": t.value} for t in tasks],\n                   \"calls\": calls, \"results\": [asdict(r) for r in results],\n                   \"error\": None, \"cause\": None, \"notes\": []}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "accepted": true,
+      "tasks": [
+        {
+          "id": "a",
+          "value": 2
+        },
+        {
+          "id": "b",
+          "value": 3
+        }
+      ],
+      "calls": [
+        "a",
+        "b"
+      ],
+      "error": null,
+      "cause": null,
+      "notes": []
+    },
+    {
+      "id": "bad-json",
+      "label": "JSON 语法错误：未开始执行",
+      "text": "{",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import InputError, Processor, parse_tasks\n\ntext = '{'\ncalls = []\ndef worker(task):\n    calls.append(task.id)\n    return task.value * 2\ntry:\n    tasks = parse_tasks(text)\nexcept InputError as error:\n    observation = {\"accepted\": False, \"tasks\": [], \"calls\": calls,\n                   \"error\": type(error).__name__,\n                   \"cause\": type(error.__cause__).__name__ if error.__cause__ else None,\n                   \"notes\": list(getattr(error, \"__notes__\", []))}\nelse:\n    results = Processor(worker).process_batch(tasks)\n    observation = {\"accepted\": True, \"tasks\": [{\"id\": t.id, \"value\": t.value} for t in tasks],\n                   \"calls\": calls, \"results\": [asdict(r) for r in results],\n                   \"error\": None, \"cause\": None, \"notes\": []}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "accepted": false,
+      "tasks": [],
+      "calls": [],
+      "error": "InputError",
+      "cause": "JSONDecodeError",
+      "notes": []
+    },
+    {
+      "id": "invalid-row",
+      "label": "后续行字段错误：不执行任何任务",
+      "text": "[{\"id\":\"a\",\"value\":2},{\"id\":\"b\",\"value\":true}]",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import InputError, Processor, parse_tasks\n\ntext = '[{\"id\":\"a\",\"value\":2},{\"id\":\"b\",\"value\":true}]'\ncalls = []\ndef worker(task):\n    calls.append(task.id)\n    return task.value * 2\ntry:\n    tasks = parse_tasks(text)\nexcept InputError as error:\n    observation = {\"accepted\": False, \"tasks\": [], \"calls\": calls,\n                   \"error\": type(error).__name__,\n                   \"cause\": type(error.__cause__).__name__ if error.__cause__ else None,\n                   \"notes\": list(getattr(error, \"__notes__\", []))}\nelse:\n    results = Processor(worker).process_batch(tasks)\n    observation = {\"accepted\": True, \"tasks\": [{\"id\": t.id, \"value\": t.value} for t in tasks],\n                   \"calls\": calls, \"results\": [asdict(r) for r in results],\n                   \"error\": None, \"cause\": None, \"notes\": []}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "accepted": false,
+      "tasks": [],
+      "calls": [],
+      "error": "InputError",
+      "cause": null,
+      "notes": [
+        "task index: 1"
+      ]
+    }
+  ],
+  "batches": [
+    {
+      "id": "expected",
+      "label": "预期任务错误：隔离并继续",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import Processor, PermanentError, Task, TransientError\n\ncalls, delays = [], []\ndef worker(task):\n    calls.append(task.id)\n    if task.id == \"b\":\n        raise PermanentError(\"rejected\")\n    return task.value * 2\nprocessor = Processor(worker, max_attempts=3, sleep=delays.append)\ntasks = [Task(\"a\", 2), Task(\"b\", -1), Task(\"c\", 3)]\ntry:\n    results = processor.process_batch(tasks)\nexcept TypeError as error:\n    observation = {\"tasks\": [{\"id\": task.id, \"value\": task.value} for task in tasks],\n                   \"results\": None, \"calls\": calls, \"delays\": delays,\n                   \"committed\": processor.committed, \"error\": type(error).__name__}\nelse:\n    observation = {\"tasks\": [{\"id\": task.id, \"value\": task.value} for task in tasks],\n                   \"results\": [asdict(result) for result in results],\n                   \"calls\": calls, \"delays\": delays, \"committed\": processor.committed,\n                   \"error\": None}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "tasks": [
+        {
+          "id": "a",
+          "value": 2
+        },
+        {
+          "id": "b",
+          "value": -1
+        },
+        {
+          "id": "c",
+          "value": 3
+        }
+      ],
+      "results": [
+        {
+          "id": "a",
+          "status": "done",
+          "value": 4,
+          "error": null,
+          "attempts": 1
+        },
+        {
+          "id": "b",
+          "status": "failed",
+          "value": null,
+          "error": "PermanentError: rejected",
+          "attempts": 0
+        },
+        {
+          "id": "c",
+          "status": "done",
+          "value": 6,
+          "error": null,
+          "attempts": 1
+        }
+      ],
+      "calls": [
+        "a",
+        "b",
+        "c"
+      ],
+      "delays": [],
+      "committed": {
+        "a": 4,
+        "c": 6
+      },
+      "error": null
+    },
+    {
+      "id": "exhausted",
+      "label": "重试耗尽：隔离并继续",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import Processor, PermanentError, Task, TransientError\n\ncalls, delays = [], []\ndef worker(task):\n    calls.append(task.id)\n    if task.id == \"b\":\n        raise TransientError(\"busy\")\n    return task.value * 2\nprocessor = Processor(worker, max_attempts=2, sleep=delays.append)\ntasks = [Task(\"a\", 2), Task(\"b\", -1), Task(\"c\", 3)]\ntry:\n    results = processor.process_batch(tasks)\nexcept TypeError as error:\n    observation = {\"tasks\": [{\"id\": task.id, \"value\": task.value} for task in tasks],\n                   \"results\": None, \"calls\": calls, \"delays\": delays,\n                   \"committed\": processor.committed, \"error\": type(error).__name__}\nelse:\n    observation = {\"tasks\": [{\"id\": task.id, \"value\": task.value} for task in tasks],\n                   \"results\": [asdict(result) for result in results],\n                   \"calls\": calls, \"delays\": delays, \"committed\": processor.committed,\n                   \"error\": None}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "tasks": [
+        {
+          "id": "a",
+          "value": 2
+        },
+        {
+          "id": "b",
+          "value": -1
+        },
+        {
+          "id": "c",
+          "value": 3
+        }
+      ],
+      "results": [
+        {
+          "id": "a",
+          "status": "done",
+          "value": 4,
+          "error": null,
+          "attempts": 1
+        },
+        {
+          "id": "b",
+          "status": "failed",
+          "value": null,
+          "error": "TransientError: busy",
+          "attempts": 0
+        },
+        {
+          "id": "c",
+          "status": "done",
+          "value": 6,
+          "error": null,
+          "attempts": 1
+        }
+      ],
+      "calls": [
+        "a",
+        "b",
+        "b",
+        "c"
+      ],
+      "delays": [
+        0.01
+      ],
+      "committed": {
+        "a": 4,
+        "c": 6
+      },
+      "error": null
+    },
+    {
+      "id": "bug",
+      "label": "未知缺陷：中断批次",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import Processor, PermanentError, Task, TransientError\n\ncalls, delays = [], []\ndef worker(task):\n    calls.append(task.id)\n    if task.id == \"b\":\n        raise TypeError(\"worker bug\")\n    return task.value * 2\nprocessor = Processor(worker, max_attempts=3, sleep=delays.append)\ntasks = [Task(\"a\", 2), Task(\"b\", -1), Task(\"c\", 3)]\ntry:\n    results = processor.process_batch(tasks)\nexcept TypeError as error:\n    observation = {\"tasks\": [{\"id\": task.id, \"value\": task.value} for task in tasks],\n                   \"results\": None, \"calls\": calls, \"delays\": delays,\n                   \"committed\": processor.committed, \"error\": type(error).__name__}\nelse:\n    observation = {\"tasks\": [{\"id\": task.id, \"value\": task.value} for task in tasks],\n                   \"results\": [asdict(result) for result in results],\n                   \"calls\": calls, \"delays\": delays, \"committed\": processor.committed,\n                   \"error\": None}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "tasks": [
+        {
+          "id": "a",
+          "value": 2
+        },
+        {
+          "id": "b",
+          "value": -1
+        },
+        {
+          "id": "c",
+          "value": 3
+        }
+      ],
+      "results": null,
+      "calls": [
+        "a",
+        "b"
+      ],
+      "delays": [],
+      "committed": {
+        "a": 4
+      },
+      "error": "TypeError"
+    }
+  ],
+  "cache": [
+    {
+      "id": "same",
+      "label": "相同键和值：复用已提交结果",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import Processor, parse_tasks\ncalls = []\ndef worker(task):\n    calls.append(task.id)\n    return task.value * 2\nprocessor = Processor(worker)\nresults = processor.process_batch(parse_tasks('[{\"id\":\"a\",\"value\":2},{\"id\":\"a\",\"value\":2}]'))\nobservation = {\"results\": [asdict(r) for r in results], \"calls\": calls,\n               \"committed\": processor.committed}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "results": [
+        {
+          "id": "a",
+          "status": "done",
+          "value": 4,
+          "error": null,
+          "attempts": 1
+        },
+        {
+          "id": "a",
+          "status": "cached",
+          "value": 4,
+          "error": null,
+          "attempts": 0
+        }
+      ],
+      "calls": [
+        "a"
+      ],
+      "committed": {
+        "a": 4
+      }
+    },
+    {
+      "id": "conflict",
+      "label": "相同键不同值：隔离冲突",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import Processor, parse_tasks\ncalls = []\ndef worker(task):\n    calls.append(task.id)\n    return task.value * 2\nprocessor = Processor(worker)\nresults = processor.process_batch(parse_tasks('[{\"id\":\"a\",\"value\":2},{\"id\":\"a\",\"value\":9},{\"id\":\"b\",\"value\":3}]'))\nobservation = {\"results\": [asdict(r) for r in results], \"calls\": calls,\n               \"committed\": processor.committed}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "results": [
+        {
+          "id": "a",
+          "status": "done",
+          "value": 4,
+          "error": null,
+          "attempts": 1
+        },
+        {
+          "id": "a",
+          "status": "failed",
+          "value": null,
+          "error": "InputError: conflicting value for task id: a",
+          "attempts": 0
+        },
+        {
+          "id": "b",
+          "status": "done",
+          "value": 6,
+          "error": null,
+          "attempts": 1
+        }
+      ],
+      "calls": [
+        "a",
+        "b"
+      ],
+      "committed": {
+        "a": 4,
+        "b": 6
+      }
+    },
+    {
+      "id": "fresh",
+      "label": "新实例：缓存不跨处理器",
+      "code": "import json\nfrom dataclasses import asdict\nfrom python.task_processor import Processor, parse_tasks\ncalls = []\ndef worker(task):\n    calls.append(task.id)\n    return task.value * 2\none, two = Processor(worker), Processor(worker)\nfirst = one.process_batch(parse_tasks('[{\"id\":\"a\",\"value\":2}]'))\nsecond = two.process_batch(parse_tasks('[{\"id\":\"a\",\"value\":2}]'))\nresults = first + second\nprocessor = two\nobservation = {\"results\": [asdict(r) for r in results], \"calls\": calls,\n               \"committed\": processor.committed}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "results": [
+        {
+          "id": "a",
+          "status": "done",
+          "value": 4,
+          "error": null,
+          "attempts": 1
+        },
+        {
+          "id": "a",
+          "status": "done",
+          "value": 4,
+          "error": null,
+          "attempts": 1
+        }
+      ],
+      "calls": [
+        "a",
+        "a"
+      ],
+      "committed": {
+        "a": 4
+      }
+    }
+  ],
+  "cli": [
+    {
+      "id": "valid",
+      "label": "默认样例文件",
+      "exitCode": 0,
+      "stdout": "[\n  {\n    \"id\": \"first\",\n    \"status\": \"done\",\n    \"value\": 42,\n    \"error\": null,\n    \"attempts\": 1\n  },\n  {\n    \"id\": \"second\",\n    \"status\": \"done\",\n    \"value\": 10,\n    \"error\": null,\n    \"attempts\": 1\n  },\n  {\n    \"id\": \"first\",\n    \"status\": \"cached\",\n    \"value\": 42,\n    \"error\": null,\n    \"attempts\": 0\n  }\n]\n",
+      "stderrLastLine": ""
+    },
+    {
+      "id": "invalid",
+      "label": "损坏 JSON 文件",
+      "exitCode": 2,
+      "stdout": "",
+      "stderrLastLine": "python.task_processor.processor.InputError: invalid task JSON"
+    }
+  ]
+}

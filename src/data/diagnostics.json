@@ -1,0 +1,183 @@
+{
+  "pythonVersion": "3.11.15",
+  "pytestVersion": "9.1.1",
+  "trace": {
+    "code": "def convert(text):\n    return int(text)\n\ndef parse_record(record):\n    return convert(record)\n\ndef run_job():\n    return parse_record(\"bad\")\n\nrun_job()\n",
+    "type": "ValueError",
+    "message": "invalid literal for int() with base 10: 'bad'",
+    "frames": [
+      {
+        "function": "<module>",
+        "line": 10,
+        "source": "run_job()"
+      },
+      {
+        "function": "run_job",
+        "line": 8,
+        "source": "return parse_record(\"bad\")"
+      },
+      {
+        "function": "parse_record",
+        "line": 5,
+        "source": "return convert(record)"
+      },
+      {
+        "function": "convert",
+        "line": 2,
+        "source": "return int(text)"
+      }
+    ]
+  },
+  "logs": [
+    {
+      "id": "message",
+      "label": "只记录错误消息",
+      "code": "try:\n    int(\"bad\")\nexcept ValueError as error:\n    logger.error(\"task_id=%s phase=%s error=%s\", \"job-9\", \"parse\", error)\nafter_handler = True\n",
+      "message": "task_id=job-9 phase=parse error=invalid literal for int() with base 10: 'bad'",
+      "formatted": "ERROR:task_id=job-9 phase=parse error=invalid literal for int() with base 10: 'bad'",
+      "hasExcInfo": false,
+      "exceptionType": null,
+      "frames": [],
+      "propagated": false,
+      "afterHandler": true
+    },
+    {
+      "id": "traceback",
+      "label": "记录异常现场",
+      "code": "try:\n    int(\"bad\")\nexcept ValueError as error:\n    logger.exception(\"task_id=%s phase=%s parse failed\", \"job-9\", \"parse\")\nafter_handler = True\n",
+      "message": "task_id=job-9 phase=parse parse failed",
+      "formatted": "ERROR:task_id=job-9 phase=parse parse failed\nTraceback (most recent call last):\n  File \"chapter09.py\", line 2, in <module>\n    int(\"bad\")\nValueError: invalid literal for int() with base 10: 'bad'",
+      "hasExcInfo": true,
+      "exceptionType": "ValueError",
+      "frames": [
+        {
+          "function": "<module>",
+          "line": 2,
+          "source": "int(\"bad\")"
+        }
+      ],
+      "propagated": false,
+      "afterHandler": true
+    },
+    {
+      "id": "reraise",
+      "label": "记录后重新抛出",
+      "code": "try:\n    int(\"bad\")\nexcept ValueError as error:\n    logger.exception(\"task_id=%s phase=%s parse failed\", \"job-9\", \"parse\")\n    raise\nafter_handler = True\n",
+      "message": "task_id=job-9 phase=parse parse failed",
+      "formatted": "ERROR:task_id=job-9 phase=parse parse failed\nTraceback (most recent call last):\n  File \"chapter09.py\", line 2, in <module>\n    int(\"bad\")\nValueError: invalid literal for int() with base 10: 'bad'",
+      "hasExcInfo": true,
+      "exceptionType": "ValueError",
+      "frames": [
+        {
+          "function": "<module>",
+          "line": 2,
+          "source": "int(\"bad\")"
+        }
+      ],
+      "propagated": true,
+      "afterHandler": false
+    }
+  ],
+  "testing": {
+    "definition": "class TaskInputError(Exception):\n    def __init__(self, task_id, message=\"invalid count\"):\n        self.task_id = task_id\n        super().__init__(message)\n",
+    "implementations": [
+      {
+        "id": "correct",
+        "label": "正确实现",
+        "code": "def read_count(task_id, text):\n    if not isinstance(text, str):\n        raise TaskInputError(task_id, \"count must be text\")\n    try:\n        return int(text)\n    except ValueError as original:\n        raise TaskInputError(task_id, \"count must be an integer\") from original\n"
+      },
+      {
+        "id": "bool-bug",
+        "label": "遗漏 bool 类型检查",
+        "code": "def read_count(task_id, text):\n    try:\n        return int(text)\n    except ValueError as original:\n        raise TaskInputError(task_id, \"count must be an integer\") from original\n"
+      },
+      {
+        "id": "cause-bug",
+        "label": "丢失显式异常原因",
+        "code": "def read_count(task_id, text):\n    if not isinstance(text, str):\n        raise TaskInputError(task_id, \"count must be text\")\n    try:\n        return int(text)\n    except ValueError:\n        raise TaskInputError(task_id, \"count must be an integer\") from None\n"
+      }
+    ],
+    "suites": [
+      {
+        "id": "success",
+        "label": "合法输入",
+        "code": "import pytest\n\ndef test_valid_count():\n    assert read_count(\"job-9\", \"21\") == 21\n"
+      },
+      {
+        "id": "type",
+        "label": "领域异常类型",
+        "code": "import pytest\n\ndef test_bad_text_raises_domain_error():\n    with pytest.raises(TaskInputError):\n        read_count(\"job-9\", \"bad\")\n"
+      },
+      {
+        "id": "contract",
+        "label": "完整契约",
+        "code": "import pytest\n\ndef test_success():\n    assert read_count(\"job-9\", \"21\") == 21\n\ndef test_bad_text_keeps_task_and_cause():\n    with pytest.raises(TaskInputError) as captured:\n        read_count(\"job-9\", \"bad\")\n    assert captured.value.task_id == \"job-9\"\n    assert isinstance(captured.value.__cause__, ValueError)\n\ndef test_bool_is_rejected():\n    with pytest.raises(TaskInputError) as captured:\n        read_count(\"job-9\", True)\n    assert captured.value.task_id == \"job-9\"\n"
+      }
+    ],
+    "results": [
+      {
+        "implementation": "correct",
+        "suite": "success",
+        "passed": 1,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "correct",
+        "suite": "type",
+        "passed": 1,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "correct",
+        "suite": "contract",
+        "passed": 3,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "bool-bug",
+        "suite": "success",
+        "passed": 1,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "bool-bug",
+        "suite": "type",
+        "passed": 1,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "bool-bug",
+        "suite": "contract",
+        "passed": 2,
+        "failed": 1,
+        "exitCode": 1
+      },
+      {
+        "implementation": "cause-bug",
+        "suite": "success",
+        "passed": 1,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "cause-bug",
+        "suite": "type",
+        "passed": 1,
+        "failed": 0,
+        "exitCode": 0
+      },
+      {
+        "implementation": "cause-bug",
+        "suite": "contract",
+        "passed": 2,
+        "failed": 1,
+        "exitCode": 1
+      }
+    ]
+  }
+}

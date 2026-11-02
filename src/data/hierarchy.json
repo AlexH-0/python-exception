@@ -1,0 +1,350 @@
+{
+  "python": "CPython 3.11",
+  "types": [
+    {
+      "name": "BaseException",
+      "bases": []
+    },
+    {
+      "name": "Exception",
+      "bases": [
+        "BaseException"
+      ]
+    },
+    {
+      "name": "KeyboardInterrupt",
+      "bases": [
+        "BaseException"
+      ]
+    },
+    {
+      "name": "SystemExit",
+      "bases": [
+        "BaseException"
+      ]
+    },
+    {
+      "name": "GeneratorExit",
+      "bases": [
+        "BaseException"
+      ]
+    },
+    {
+      "name": "ValueError",
+      "bases": [
+        "Exception"
+      ]
+    },
+    {
+      "name": "TypeError",
+      "bases": [
+        "Exception"
+      ]
+    },
+    {
+      "name": "LookupError",
+      "bases": [
+        "Exception"
+      ]
+    },
+    {
+      "name": "KeyError",
+      "bases": [
+        "LookupError"
+      ]
+    },
+    {
+      "name": "IndexError",
+      "bases": [
+        "LookupError"
+      ]
+    },
+    {
+      "name": "OSError",
+      "bases": [
+        "Exception"
+      ]
+    },
+    {
+      "name": "FileNotFoundError",
+      "bases": [
+        "OSError"
+      ]
+    },
+    {
+      "name": "PermissionError",
+      "bases": [
+        "OSError"
+      ]
+    },
+    {
+      "name": "ArithmeticError",
+      "bases": [
+        "Exception"
+      ]
+    },
+    {
+      "name": "ZeroDivisionError",
+      "bases": [
+        "ArithmeticError"
+      ]
+    }
+  ],
+  "matches": {
+    "BaseException": {
+      "BaseException": true,
+      "Exception": true,
+      "KeyboardInterrupt": true,
+      "SystemExit": true,
+      "GeneratorExit": true,
+      "ValueError": true,
+      "TypeError": true,
+      "LookupError": true,
+      "KeyError": true,
+      "IndexError": true,
+      "OSError": true,
+      "FileNotFoundError": true,
+      "PermissionError": true,
+      "ArithmeticError": true,
+      "ZeroDivisionError": true
+    },
+    "Exception": {
+      "BaseException": false,
+      "Exception": true,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": true,
+      "TypeError": true,
+      "LookupError": true,
+      "KeyError": true,
+      "IndexError": true,
+      "OSError": true,
+      "FileNotFoundError": true,
+      "PermissionError": true,
+      "ArithmeticError": true,
+      "ZeroDivisionError": true
+    },
+    "KeyboardInterrupt": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": true,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "SystemExit": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": true,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "GeneratorExit": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": true,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "ValueError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": true,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "TypeError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": true,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "LookupError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": true,
+      "KeyError": true,
+      "IndexError": true,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "KeyError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": true,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "IndexError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": true,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "OSError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": true,
+      "FileNotFoundError": true,
+      "PermissionError": true,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "FileNotFoundError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": true,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "PermissionError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": true,
+      "ArithmeticError": false,
+      "ZeroDivisionError": false
+    },
+    "ArithmeticError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": true,
+      "ZeroDivisionError": true
+    },
+    "ZeroDivisionError": {
+      "BaseException": false,
+      "Exception": false,
+      "KeyboardInterrupt": false,
+      "SystemExit": false,
+      "GeneratorExit": false,
+      "ValueError": false,
+      "TypeError": false,
+      "LookupError": false,
+      "KeyError": false,
+      "IndexError": false,
+      "OSError": false,
+      "FileNotFoundError": false,
+      "PermissionError": false,
+      "ArithmeticError": false,
+      "ZeroDivisionError": true
+    }
+  }
+}

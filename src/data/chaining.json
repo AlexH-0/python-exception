@@ -1,0 +1,164 @@
+{
+  "pythonVersion": "3.11.15",
+  "chains": [
+    {
+      "id": "implicit",
+      "code": "class InputError(Exception):\n    pass\n\ndef convert():\n    try:\n        int(\"bad\")\n    except ValueError as original:\n        raise InputError(\"count must be an integer\")",
+      "outer": {
+        "type": "InputError",
+        "message": "count must be an integer"
+      },
+      "cause": null,
+      "context": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "suppressed": false,
+      "display": [
+        "ValueError: invalid literal for int() with base 10: 'bad'",
+        "During handling of the above exception, another exception occurred:",
+        "InputError: count must be an integer"
+      ]
+    },
+    {
+      "id": "explicit",
+      "code": "class InputError(Exception):\n    pass\n\ndef convert():\n    try:\n        int(\"bad\")\n    except ValueError as original:\n        raise InputError(\"count must be an integer\") from original",
+      "outer": {
+        "type": "InputError",
+        "message": "count must be an integer"
+      },
+      "cause": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "context": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "suppressed": true,
+      "display": [
+        "ValueError: invalid literal for int() with base 10: 'bad'",
+        "The above exception was the direct cause of the following exception:",
+        "InputError: count must be an integer"
+      ]
+    },
+    {
+      "id": "hidden",
+      "code": "class InputError(Exception):\n    pass\n\ndef convert():\n    try:\n        int(\"bad\")\n    except ValueError as original:\n        raise InputError(\"count must be an integer\") from None",
+      "outer": {
+        "type": "InputError",
+        "message": "count must be an integer"
+      },
+      "cause": null,
+      "context": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "suppressed": true,
+      "display": [
+        "InputError: count must be an integer"
+      ]
+    }
+  ],
+  "reraises": [
+    {
+      "id": "bare",
+      "code": "class InputError(Exception):\n    pass\n\ndef parse():\n    global original_seen\n    try:\n        int(\"bad\")\n    except ValueError as error:\n        original_seen = error\n        raise",
+      "action": "raise",
+      "outer": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "sameObject": true,
+      "cause": null,
+      "frames": [
+        {
+          "line": 7,
+          "code": "int(\"bad\")"
+        }
+      ]
+    },
+    {
+      "id": "named",
+      "code": "class InputError(Exception):\n    pass\n\ndef parse():\n    global original_seen\n    try:\n        int(\"bad\")\n    except ValueError as error:\n        original_seen = error\n        raise error",
+      "action": "raise error",
+      "outer": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "sameObject": true,
+      "cause": null,
+      "frames": [
+        {
+          "line": 10,
+          "code": "raise error"
+        },
+        {
+          "line": 7,
+          "code": "int(\"bad\")"
+        }
+      ]
+    },
+    {
+      "id": "translate",
+      "code": "class InputError(Exception):\n    pass\n\ndef parse():\n    global original_seen\n    try:\n        int(\"bad\")\n    except ValueError as error:\n        original_seen = error\n        raise InputError(\"invalid count\") from error",
+      "action": "raise InputError(\"invalid count\") from error",
+      "outer": {
+        "type": "InputError",
+        "message": "invalid count"
+      },
+      "sameObject": false,
+      "cause": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'bad'"
+      },
+      "frames": [
+        {
+          "line": 10,
+          "code": "raise InputError(\"invalid count\") from error"
+        }
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "id": "0",
+      "type": "ValueError",
+      "message": "invalid count",
+      "notes": [],
+      "argsUnchanged": true,
+      "display": "ValueError: invalid count"
+    },
+    {
+      "id": "1",
+      "type": "ValueError",
+      "message": "invalid count",
+      "notes": [
+        "field=count"
+      ],
+      "argsUnchanged": true,
+      "display": "ValueError: invalid count\nfield=count"
+    },
+    {
+      "id": "2",
+      "type": "ValueError",
+      "message": "invalid count",
+      "notes": [
+        "task id=7"
+      ],
+      "argsUnchanged": true,
+      "display": "ValueError: invalid count\ntask id=7"
+    },
+    {
+      "id": "3",
+      "type": "ValueError",
+      "message": "invalid count",
+      "notes": [
+        "field=count",
+        "task id=7"
+      ],
+      "argsUnchanged": true,
+      "display": "ValueError: invalid count\nfield=count\ntask id=7"
+    }
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "pythonVersion": "3.11.15",
+  "split": {
+    "code": "import json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\n\nroot = ExceptionGroup(\"outer\", [\n    ExceptionGroup(\"inner\", [ValueError(\"v\"), TypeError(\"t\")]),\n    KeyError(\"k\"),\n])\nresults = []\nfor name, kind in ((\"ValueError\", ValueError), (\"TypeError\", TypeError), (\"Exception\", Exception)):\n    matched, remainder = root.split(kind)\n    results.append({\"id\": name,\n                    \"matched\": exception_tree(matched) if matched else None,\n                    \"remainder\": exception_tree(remainder) if remainder else None})\nprint(json.dumps({\"original\": exception_tree(root), \"cases\": results}, ensure_ascii=False))\n",
+    "original": {
+      "type": "ExceptionGroup",
+      "message": "outer (2 sub-exceptions)",
+      "children": [
+        {
+          "type": "ExceptionGroup",
+          "message": "inner (2 sub-exceptions)",
+          "children": [
+            {
+              "type": "ValueError",
+              "message": "v"
+            },
+            {
+              "type": "TypeError",
+              "message": "t"
+            }
+          ]
+        },
+        {
+          "type": "KeyError",
+          "message": "'k'"
+        }
+      ]
+    },
+    "cases": [
+      {
+        "id": "ValueError",
+        "matched": {
+          "type": "ExceptionGroup",
+          "message": "outer (1 sub-exception)",
+          "children": [
+            {
+              "type": "ExceptionGroup",
+              "message": "inner (1 sub-exception)",
+              "children": [
+                {
+                  "type": "ValueError",
+                  "message": "v"
+                }
+              ]
+            }
+          ]
+        },
+        "remainder": {
+          "type": "ExceptionGroup",
+          "message": "outer (2 sub-exceptions)",
+          "children": [
+            {
+              "type": "ExceptionGroup",
+              "message": "inner (1 sub-exception)",
+              "children": [
+                {
+                  "type": "TypeError",
+                  "message": "t"
+                }
+              ]
+            },
+            {
+              "type": "KeyError",
+              "message": "'k'"
+            }
+          ]
+        }
+      },
+      {
+        "id": "TypeError",
+        "matched": {
+          "type": "ExceptionGroup",
+          "message": "outer (1 sub-exception)",
+          "children": [
+            {
+              "type": "ExceptionGroup",
+              "message": "inner (1 sub-exception)",
+              "children": [
+                {
+                  "type": "TypeError",
+                  "message": "t"
+                }
+              ]
+            }
+          ]
+        },
+        "remainder": {
+          "type": "ExceptionGroup",
+          "message": "outer (2 sub-exceptions)",
+          "children": [
+            {
+              "type": "ExceptionGroup",
+              "message": "inner (1 sub-exception)",
+              "children": [
+                {
+                  "type": "ValueError",
+                  "message": "v"
+                }
+              ]
+            },
+            {
+              "type": "KeyError",
+              "message": "'k'"
+            }
+          ]
+        }
+      },
+      {
+        "id": "Exception",
+        "matched": {
+          "type": "ExceptionGroup",
+          "message": "outer (2 sub-exceptions)",
+          "children": [
+            {
+              "type": "ExceptionGroup",
+              "message": "inner (2 sub-exceptions)",
+              "children": [
+                {
+                  "type": "ValueError",
+                  "message": "v"
+                },
+                {
+                  "type": "TypeError",
+                  "message": "t"
+                }
+              ]
+            },
+            {
+              "type": "KeyError",
+              "message": "'k'"
+            }
+          ]
+        },
+        "remainder": null
+      }
+    ]
+  },
+  "routes": [
+    {
+      "id": "ordinary",
+      "label": "普通 except 接收整个异常组",
+      "code": "import json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\ndef build_group():\n    return ExceptionGroup(\"batch\", [ValueError(\"v\"), TypeError(\"t\")])\n\nevents = []\nhandled = []\nremainder = None\ntry:\n    try:\n        raise build_group()\n    except ValueError as caught:\n        events.append(\"handled ValueError\")\n        handled.append({\"type\": \"ValueError\", \"tree\": exception_tree(caught)})\nexcept ExceptionGroup as caught:\n    events.append(\"outer received\")\n    remainder = exception_tree(caught)\nprint(json.dumps({\"id\": 'ordinary', \"handled\": handled,\n                       \"remainder\": remainder, \"events\": events}, ensure_ascii=False))\n",
+      "handled": [],
+      "remainder": {
+        "type": "ExceptionGroup",
+        "message": "batch (2 sub-exceptions)",
+        "children": [
+          {
+            "type": "ValueError",
+            "message": "v"
+          },
+          {
+            "type": "TypeError",
+            "message": "t"
+          }
+        ]
+      },
+      "events": [
+        "outer received"
+      ]
+    },
+    {
+      "id": "all",
+      "label": "except* 两个分支分别处理",
+      "code": "import json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\ndef build_group():\n    return ExceptionGroup(\"batch\", [ValueError(\"v\"), TypeError(\"t\")])\n\nevents = []\nhandled = []\nremainder = None\ntry:\n    try:\n        raise build_group()\n    except* ValueError as caught:\n        events.append(\"handled ValueError\")\n        handled.append({\"type\": \"ValueError\", \"tree\": exception_tree(caught)})\n    except* TypeError as caught:\n        events.append(\"handled TypeError\")\n        handled.append({\"type\": \"TypeError\", \"tree\": exception_tree(caught)})\nexcept ExceptionGroup as caught:\n    events.append(\"outer received\")\n    remainder = exception_tree(caught)\nprint(json.dumps({\"id\": 'all', \"handled\": handled,\n                       \"remainder\": remainder, \"events\": events}, ensure_ascii=False))\n",
+      "handled": [
+        {
+          "type": "ValueError",
+          "tree": {
+            "type": "ExceptionGroup",
+            "message": "batch (1 sub-exception)",
+            "children": [
+              {
+                "type": "ValueError",
+                "message": "v"
+              }
+            ]
+          }
+        },
+        {
+          "type": "TypeError",
+          "tree": {
+            "type": "ExceptionGroup",
+            "message": "batch (1 sub-exception)",
+            "children": [
+              {
+                "type": "TypeError",
+                "message": "t"
+              }
+            ]
+          }
+        }
+      ],
+      "remainder": null,
+      "events": [
+        "handled ValueError",
+        "handled TypeError"
+      ]
+    },
+    {
+      "id": "residual",
+      "label": "未匹配的异常组继续传播",
+      "code": "import json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\ndef build_group():\n    return ExceptionGroup(\"batch\", [ValueError(\"v\"), KeyError(\"k\")])\n\nevents = []\nhandled = []\nremainder = None\ntry:\n    try:\n        raise build_group()\n    except* ValueError as caught:\n        events.append(\"handled ValueError\")\n        handled.append({\"type\": \"ValueError\", \"tree\": exception_tree(caught)})\n    except* TypeError as caught:\n        events.append(\"handled TypeError\")\n        handled.append({\"type\": \"TypeError\", \"tree\": exception_tree(caught)})\nexcept ExceptionGroup as caught:\n    events.append(\"outer received\")\n    remainder = exception_tree(caught)\nprint(json.dumps({\"id\": 'residual', \"handled\": handled,\n                       \"remainder\": remainder, \"events\": events}, ensure_ascii=False))\n",
+      "handled": [
+        {
+          "type": "ValueError",
+          "tree": {
+            "type": "ExceptionGroup",
+            "message": "batch (1 sub-exception)",
+            "children": [
+              {
+                "type": "ValueError",
+                "message": "v"
+              }
+            ]
+          }
+        }
+      ],
+      "remainder": {
+        "type": "ExceptionGroup",
+        "message": "batch (1 sub-exception)",
+        "children": [
+          {
+            "type": "KeyError",
+            "message": "'k'"
+          }
+        ]
+      },
+      "events": [
+        "handled ValueError",
+        "outer received"
+      ]
+    },
+    {
+      "id": "nested",
+      "label": "匹配与残留保留嵌套路径",
+      "code": "import json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\ndef build_group():\n    return ExceptionGroup(\"outer\", [ExceptionGroup(\"inner\", [ValueError(\"v\"), TypeError(\"t\")]), KeyError(\"k\")])\n\nevents = []\nhandled = []\nremainder = None\ntry:\n    try:\n        raise build_group()\n    except* ValueError as caught:\n        events.append(\"handled ValueError\")\n        handled.append({\"type\": \"ValueError\", \"tree\": exception_tree(caught)})\n    except* TypeError as caught:\n        events.append(\"handled TypeError\")\n        handled.append({\"type\": \"TypeError\", \"tree\": exception_tree(caught)})\nexcept ExceptionGroup as caught:\n    events.append(\"outer received\")\n    remainder = exception_tree(caught)\nprint(json.dumps({\"id\": 'nested', \"handled\": handled,\n                       \"remainder\": remainder, \"events\": events}, ensure_ascii=False))\n",
+      "handled": [
+        {
+          "type": "ValueError",
+          "tree": {
+            "type": "ExceptionGroup",
+            "message": "outer (1 sub-exception)",
+            "children": [
+              {
+                "type": "ExceptionGroup",
+                "message": "inner (1 sub-exception)",
+                "children": [
+                  {
+                    "type": "ValueError",
+                    "message": "v"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "TypeError",
+          "tree": {
+            "type": "ExceptionGroup",
+            "message": "outer (1 sub-exception)",
+            "children": [
+              {
+                "type": "ExceptionGroup",
+                "message": "inner (1 sub-exception)",
+                "children": [
+                  {
+                    "type": "TypeError",
+                    "message": "t"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "remainder": {
+        "type": "ExceptionGroup",
+        "message": "outer (1 sub-exception)",
+        "children": [
+          {
+            "type": "KeyError",
+            "message": "'k'"
+          }
+        ]
+      },
+      "events": [
+        "handled ValueError",
+        "handled TypeError",
+        "outer received"
+      ]
+    }
+  ],
+  "cancel": [
+    {
+      "code": "import asyncio\nimport json\n\nasync def main():\n    started = asyncio.Event()\n    events = []\n    cleaned = False\n    async def worker():\n        nonlocal cleaned\n        try:\n            events.append(\"worker started\")\n            started.set()\n            await asyncio.Event().wait()\n        except Exception:\n            events.append(\"ordinary handler\")\n        finally:\n            cleaned = True\n            events.append(\"cleanup\")\n    task = asyncio.create_task(worker())\n    await started.wait()\n    task.cancel()\n    events.append(\"cancel requested\")\n    returned = None\n    try:\n        returned = await task\n        events.append(\"caller received value\")\n    except asyncio.CancelledError:\n        events.append(\"caller received cancellation\")\n    result = {\"id\": 'normal', \"events\": events,\n              \"cancelled\": task.cancelled(), \"returned\": returned,\n              \"cleaned\": cleaned}\n    print(json.dumps(result, ensure_ascii=False))\n\nasyncio.run(main())\n",
+      "id": "normal",
+      "events": [
+        "worker started",
+        "cancel requested",
+        "cleanup",
+        "caller received cancellation"
+      ],
+      "cancelled": true,
+      "returned": null,
+      "cleaned": true
+    },
+    {
+      "code": "import asyncio\nimport json\n\nasync def main():\n    started = asyncio.Event()\n    events = []\n    cleaned = False\n    async def worker():\n        nonlocal cleaned\n        try:\n            events.append(\"worker started\")\n            started.set()\n            await asyncio.Event().wait()\n        except asyncio.CancelledError:\n            events.append(\"cancellation swallowed\")\n            return \"pretend success\"\n        finally:\n            cleaned = True\n            events.append(\"cleanup\")\n    task = asyncio.create_task(worker())\n    await started.wait()\n    task.cancel()\n    events.append(\"cancel requested\")\n    returned = None\n    try:\n        returned = await task\n        events.append(\"caller received value\")\n    except asyncio.CancelledError:\n        events.append(\"caller received cancellation\")\n    result = {\"id\": 'counter', \"events\": events,\n              \"cancelled\": task.cancelled(), \"returned\": returned,\n              \"cleaned\": cleaned}\n    print(json.dumps(result, ensure_ascii=False))\n\nasyncio.run(main())\n",
+      "id": "counter",
+      "events": [
+        "worker started",
+        "cancel requested",
+        "cancellation swallowed",
+        "cleanup",
+        "caller received value"
+      ],
+      "cancelled": false,
+      "returned": "pretend success",
+      "cleaned": true
+    }
+  ],
+  "taskgroups": [
+    {
+      "label": "同伴正常清理",
+      "code": "import asyncio\nimport json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\n\nasync def main():\n    peer_started = asyncio.Event()\n    events = []\n    peer_task = None\n    caught_tree = None\n    async def peer():\n        try:\n            events.append(\"peer ready\")\n            peer_started.set()\n            await asyncio.Event().wait()\n        finally:\n            events.append(\"peer cleanup\")\n    async def worker():\n        await peer_started.wait()\n        events.append(\"worker failed\")\n        raise ValueError(\"worker failed\")\n    try:\n        async with asyncio.TaskGroup() as group:\n            peer_task = group.create_task(peer())\n            group.create_task(worker())\n    except ExceptionGroup as caught:\n        events.append(\"group received\")\n        caught_tree = exception_tree(caught)\n    leaves = []\n    def collect(node):\n        if node.get(\"children\"):\n            for child in node[\"children\"]:\n                collect(child)\n        else:\n            leaves.append(node[\"type\"])\n    collect(caught_tree)\n    result = {\"id\": 'clean', \"events\": events,\n              \"tree\": caught_tree, \"leaves\": leaves,\n              \"peerCancelled\": peer_task.cancelled(),\n              \"peerDone\": peer_task.done()}\n    print(json.dumps(result, ensure_ascii=False))\n\nasyncio.run(main())\n",
+      "id": "clean",
+      "events": [
+        "peer ready",
+        "worker failed",
+        "peer cleanup",
+        "group received"
+      ],
+      "tree": {
+        "type": "ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+        "children": [
+          {
+            "type": "ValueError",
+            "message": "worker failed"
+          }
+        ]
+      },
+      "leaves": [
+        "ValueError"
+      ],
+      "peerCancelled": true,
+      "peerDone": true
+    },
+    {
+      "label": "同伴清理也抛错",
+      "code": "import asyncio\nimport json\ndef exception_tree(error):\n    node = {\"type\": type(error).__name__, \"message\": str(error)}\n    if isinstance(error, BaseExceptionGroup):\n        node[\"children\"] = [exception_tree(child) for child in error.exceptions]\n    return node\n\nasync def main():\n    peer_started = asyncio.Event()\n    events = []\n    peer_task = None\n    caught_tree = None\n    async def peer():\n        try:\n            events.append(\"peer ready\")\n            peer_started.set()\n            await asyncio.Event().wait()\n        finally:\n            events.append(\"peer cleanup\")\n            raise RuntimeError(\"cleanup failed\")\n    async def worker():\n        await peer_started.wait()\n        events.append(\"worker failed\")\n        raise ValueError(\"worker failed\")\n    try:\n        async with asyncio.TaskGroup() as group:\n            peer_task = group.create_task(peer())\n            group.create_task(worker())\n    except ExceptionGroup as caught:\n        events.append(\"group received\")\n        caught_tree = exception_tree(caught)\n    leaves = []\n    def collect(node):\n        if node.get(\"children\"):\n            for child in node[\"children\"]:\n                collect(child)\n        else:\n            leaves.append(node[\"type\"])\n    collect(caught_tree)\n    result = {\"id\": 'cleanup-error', \"events\": events,\n              \"tree\": caught_tree, \"leaves\": leaves,\n              \"peerCancelled\": peer_task.cancelled(),\n              \"peerDone\": peer_task.done()}\n    print(json.dumps(result, ensure_ascii=False))\n\nasyncio.run(main())\n",
+      "id": "cleanup-error",
+      "events": [
+        "peer ready",
+        "worker failed",
+        "peer cleanup",
+        "group received"
+      ],
+      "tree": {
+        "type": "ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (2 sub-exceptions)",
+        "children": [
+          {
+            "type": "ValueError",
+            "message": "worker failed"
+          },
+          {
+            "type": "RuntimeError",
+            "message": "cleanup failed"
+          }
+        ]
+      },
+      "leaves": [
+        "ValueError",
+        "RuntimeError"
+      ],
+      "peerCancelled": false,
+      "peerDone": true
+    }
+  ],
+  "generators": [
+    {
+      "label": "正常 return",
+      "code": "import json\n\nevents = []\ncleaned = False\nerror = None\ncause = None\nvalue = None\ndef resource():\n    global cleaned\n    try:\n        events.append(\"yield open\")\n        yield \"open\"\n        return 9\n    finally:\n        cleaned = True\n        events.append(\"cleanup\")\niterator = resource()\nfirst = next(iterator)\nevents.append(\"caller received \" + first)\ntry:\n    next(iterator)\nexcept StopIteration as caught:\n    error = type(caught).__name__\n    value = caught.value\nresult = {\"id\": 'return', \"events\": events, \"error\": error,\n          \"cause\": cause, \"value\": value, \"cleaned\": cleaned}\nprint(json.dumps(result, ensure_ascii=False))\n",
+      "id": "return",
+      "events": [
+        "yield open",
+        "caller received open",
+        "cleanup"
+      ],
+      "error": "StopIteration",
+      "cause": null,
+      "value": 9,
+      "cleaned": true
+    },
+    {
+      "label": "意外 StopIteration",
+      "code": "import json\n\nevents = []\ncleaned = False\nerror = None\ncause = None\nvalue = None\ndef resource():\n    global cleaned\n    try:\n        events.append(\"yield open\")\n        yield \"open\"\n        raise StopIteration(\"inside\")\n    finally:\n        cleaned = True\n        events.append(\"cleanup\")\niterator = resource()\nfirst = next(iterator)\nevents.append(\"caller received \" + first)\ntry:\n    next(iterator)\nexcept RuntimeError as caught:\n    error = type(caught).__name__\n    cause = type(caught.__cause__).__name__ if caught.__cause__ else None\nresult = {\"id\": 'stop', \"events\": events, \"error\": error,\n          \"cause\": cause, \"value\": value, \"cleaned\": cleaned}\nprint(json.dumps(result, ensure_ascii=False))\n",
+      "id": "stop",
+      "events": [
+        "yield open",
+        "caller received open",
+        "cleanup"
+      ],
+      "error": "RuntimeError",
+      "cause": "StopIteration",
+      "value": null,
+      "cleaned": true
+    },
+    {
+      "label": "显式 close",
+      "code": "import json\n\nevents = []\ncleaned = False\nerror = None\ncause = None\nvalue = None\ndef resource():\n    global cleaned\n    try:\n        events.append(\"yield open\")\n        yield \"open\"\n    except GeneratorExit:\n        events.append(\"GeneratorExit received\")\n        raise\n    finally:\n        cleaned = True\n        events.append(\"cleanup\")\niterator = resource()\nfirst = next(iterator)\nevents.append(\"caller received \" + first)\nvalue = iterator.close()\nresult = {\"id\": 'close', \"events\": events, \"error\": error,\n          \"cause\": cause, \"value\": value, \"cleaned\": cleaned}\nprint(json.dumps(result, ensure_ascii=False))\n",
+      "id": "close",
+      "events": [
+        "yield open",
+        "caller received open",
+        "GeneratorExit received",
+        "cleanup"
+      ],
+      "error": null,
+      "cause": null,
+      "value": null,
+      "cleaned": true
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+{
+  "pythonVersion": "3.11.15",
+  "retryCode": "from time import sleep as real_sleep\nfrom python.task_processor import TransientError\n\n\ndef retry(operation, attempts=3, sleep=real_sleep):\n    if type(attempts) is not int or attempts < 1:\n        raise ValueError(\"attempts must be a positive integer\")\n    for attempt in range(attempts):\n        try:\n            return operation()\n        except TransientError:\n            if attempt + 1 == attempts:\n                raise\n            sleep(0.01 * 2 ** attempt)\n",
+  "retries": [
+    {
+      "id": "third-success",
+      "label": "前两次暂时失败，第三次返回 42",
+      "plans": [
+        {
+          "limit": 2,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "TransientError",
+              "delayAfter": 0.01
+            },
+            {
+              "number": 2,
+              "outcome": "TransientError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [
+            0.01
+          ],
+          "kind": "raised",
+          "value": null,
+          "error": "TransientError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    if len(attempts) < 2:\n        error = TransientError(\"temporary worker failure\")\n        operation_errors.append(error)\n        attempts.append({\"number\": len(attempts) + 1,\n                         \"outcome\": \"TransientError\",\n                         \"delayAfter\": None})\n        raise error\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"returned\", \"delayAfter\": None})\n    return 42\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=2, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        },
+        {
+          "limit": 3,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "TransientError",
+              "delayAfter": 0.01
+            },
+            {
+              "number": 2,
+              "outcome": "TransientError",
+              "delayAfter": 0.02
+            },
+            {
+              "number": 3,
+              "outcome": "returned",
+              "delayAfter": null
+            }
+          ],
+          "delays": [
+            0.01,
+            0.02
+          ],
+          "kind": "returned",
+          "value": 42,
+          "error": null,
+          "sameLastException": false,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    if len(attempts) < 2:\n        error = TransientError(\"temporary worker failure\")\n        operation_errors.append(error)\n        attempts.append({\"number\": len(attempts) + 1,\n                         \"outcome\": \"TransientError\",\n                         \"delayAfter\": None})\n        raise error\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"returned\", \"delayAfter\": None})\n    return 42\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=3, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        }
+      ]
+    },
+    {
+      "id": "always-transient",
+      "label": "每次都是暂时失败",
+      "plans": [
+        {
+          "limit": 2,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "TransientError",
+              "delayAfter": 0.01
+            },
+            {
+              "number": 2,
+              "outcome": "TransientError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [
+            0.01
+          ],
+          "kind": "raised",
+          "value": null,
+          "error": "TransientError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    error = TransientError(\"temporary worker failure\")\n    operation_errors.append(error)\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"TransientError\",\n                     \"delayAfter\": None})\n    raise error\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=2, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        },
+        {
+          "limit": 3,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "TransientError",
+              "delayAfter": 0.01
+            },
+            {
+              "number": 2,
+              "outcome": "TransientError",
+              "delayAfter": 0.02
+            },
+            {
+              "number": 3,
+              "outcome": "TransientError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [
+            0.01,
+            0.02
+          ],
+          "kind": "raised",
+          "value": null,
+          "error": "TransientError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    error = TransientError(\"temporary worker failure\")\n    operation_errors.append(error)\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"TransientError\",\n                     \"delayAfter\": None})\n    raise error\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=3, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        }
+      ]
+    },
+    {
+      "id": "permanent",
+      "label": "永久失败，第一次就传播",
+      "plans": [
+        {
+          "limit": 2,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "PermanentError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [],
+          "kind": "raised",
+          "value": null,
+          "error": "PermanentError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    error = PermanentError(\"task is permanently rejected\")\n    operation_errors.append(error)\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"PermanentError\",\n                     \"delayAfter\": None})\n    raise error\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=2, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        },
+        {
+          "limit": 3,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "PermanentError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [],
+          "kind": "raised",
+          "value": null,
+          "error": "PermanentError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    error = PermanentError(\"task is permanently rejected\")\n    operation_errors.append(error)\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"PermanentError\",\n                     \"delayAfter\": None})\n    raise error\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=3, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        }
+      ]
+    },
+    {
+      "id": "bug",
+      "label": "TypeError 不属于可重试故障",
+      "plans": [
+        {
+          "limit": 2,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "TypeError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [],
+          "kind": "raised",
+          "value": null,
+          "error": "TypeError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    error = TypeError(\"worker returned an invalid shape\")\n    operation_errors.append(error)\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"TypeError\",\n                     \"delayAfter\": None})\n    raise error\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=2, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        },
+        {
+          "limit": 3,
+          "attempts": [
+            {
+              "number": 1,
+              "outcome": "TypeError",
+              "delayAfter": null
+            }
+          ],
+          "delays": [],
+          "kind": "raised",
+          "value": null,
+          "error": "TypeError",
+          "sameLastException": true,
+          "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\nattempts = []\ndelays = []\noperation_errors = []\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    attempts[-1][\"delayAfter\"] = seconds\n\ndef operation():\n\n    error = TypeError(\"worker returned an invalid shape\")\n    operation_errors.append(error)\n    attempts.append({\"number\": len(attempts) + 1,\n                     \"outcome\": \"TypeError\",\n                     \"delayAfter\": None})\n    raise error\n\nkind, value, error, same_last_exception = \"returned\", None, None, False\ntry:\n    value = retry(operation, attempts=3, sleep=record_sleep)\nexcept (TransientError, PermanentError, TypeError) as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\n    same_last_exception = bool(operation_errors) and caught is operation_errors[-1]\n\nobservation = {\"attempts\": attempts, \"delays\": delays, \"kind\": kind,\n               \"value\": value, \"error\": error,\n               \"sameLastException\": same_last_exception}\nprint(json.dumps(observation, ensure_ascii=False))\n"
+        }
+      ]
+    }
+  ],
+  "delivery": [
+    {
+      "id": "append",
+      "label": "每次调用都追加",
+      "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\neffects, events, cache, delays = [], [], {}, []\ncalls = 0\ndeduplicate = False\n\ndef accept(key, value):\n    previous = cache.get(key)\n    if previous is not None:\n        if previous != value:\n            raise PermanentError(\"conflicting payload for key: \" + key)\n        events.append(\"duplicate accepted \" + key)\n        return\n    effects.append({\"key\": key, \"value\": value})\n    cache[key] = value\n\ndef receive(value):\n    global calls\n    calls += 1\n    events.append(\"call \" + str(calls))\n\n    key = \"append-\" + str(calls)\n    effects.append({\"key\": key, \"value\": value})\n    if calls == 1:\n        events.append(\"effect recorded; confirmation lost\")\n        raise TransientError(\"confirmation was lost\")\n    events.append(\"confirmation received\")\n    return \"confirmed\"\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    events.append(\"sleep \" + str(seconds))\n\nresult = retry(lambda: receive(1), attempts=2, sleep=record_sleep)\nconflict_rejected = False\nif deduplicate:\n    existing_key = next(iter(cache))\n    try:\n        accept(existing_key, 2)\n    except PermanentError:\n        conflict_rejected = True\n        events.append(\"same key with different payload rejected\")\nobservation = {\"calls\": calls, \"effects\": effects, \"events\": events,\n               \"delays\": delays, \"conflictRejected\": conflict_rejected,\n               \"kind\": \"returned\", \"error\": None}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "calls": 2,
+      "effects": [
+        {
+          "key": "append-1",
+          "value": 1
+        },
+        {
+          "key": "append-2",
+          "value": 1
+        }
+      ],
+      "events": [
+        "call 1",
+        "effect recorded; confirmation lost",
+        "sleep 0.01",
+        "call 2",
+        "confirmation received"
+      ],
+      "kind": "returned",
+      "error": null
+    },
+    {
+      "id": "stable-key",
+      "label": "稳定键与相同负载",
+      "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\neffects, events, cache, delays = [], [], {}, []\ncalls = 0\ndeduplicate = True\n\ndef accept(key, value):\n    previous = cache.get(key)\n    if previous is not None:\n        if previous != value:\n            raise PermanentError(\"conflicting payload for key: \" + key)\n        events.append(\"duplicate accepted \" + key)\n        return\n    effects.append({\"key\": key, \"value\": value})\n    cache[key] = value\n\ndef receive(value):\n    global calls\n    calls += 1\n    events.append(\"call \" + str(calls))\n\n    key = \"job-10\"\n    accept(key, value)\n    if calls == 1:\n        events.append(\"effect recorded; confirmation lost\")\n        raise TransientError(\"confirmation was lost\")\n    events.append(\"confirmation received\")\n    return \"confirmed\"\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    events.append(\"sleep \" + str(seconds))\n\nresult = retry(lambda: receive(1), attempts=2, sleep=record_sleep)\nconflict_rejected = False\nif deduplicate:\n    existing_key = next(iter(cache))\n    try:\n        accept(existing_key, 2)\n    except PermanentError:\n        conflict_rejected = True\n        events.append(\"same key with different payload rejected\")\nobservation = {\"calls\": calls, \"effects\": effects, \"events\": events,\n               \"delays\": delays, \"conflictRejected\": conflict_rejected,\n               \"kind\": \"returned\", \"error\": None}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "calls": 2,
+      "effects": [
+        {
+          "key": "job-10",
+          "value": 1
+        }
+      ],
+      "events": [
+        "call 1",
+        "effect recorded; confirmation lost",
+        "sleep 0.01",
+        "call 2",
+        "duplicate accepted job-10",
+        "confirmation received",
+        "same key with different payload rejected"
+      ],
+      "kind": "returned",
+      "error": null
+    },
+    {
+      "id": "new-key",
+      "label": "每次重试都换键",
+      "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import PermanentError, TransientError\n\neffects, events, cache, delays = [], [], {}, []\ncalls = 0\ndeduplicate = True\n\ndef accept(key, value):\n    previous = cache.get(key)\n    if previous is not None:\n        if previous != value:\n            raise PermanentError(\"conflicting payload for key: \" + key)\n        events.append(\"duplicate accepted \" + key)\n        return\n    effects.append({\"key\": key, \"value\": value})\n    cache[key] = value\n\ndef receive(value):\n    global calls\n    calls += 1\n    events.append(\"call \" + str(calls))\n\n    key = \"job-10-\" + str(calls)\n    accept(key, value)\n    if calls == 1:\n        events.append(\"effect recorded; confirmation lost\")\n        raise TransientError(\"confirmation was lost\")\n    events.append(\"confirmation received\")\n    return \"confirmed\"\n\ndef record_sleep(seconds):\n    delays.append(seconds)\n    events.append(\"sleep \" + str(seconds))\n\nresult = retry(lambda: receive(1), attempts=2, sleep=record_sleep)\nconflict_rejected = False\nif deduplicate:\n    existing_key = next(iter(cache))\n    try:\n        accept(existing_key, 2)\n    except PermanentError:\n        conflict_rejected = True\n        events.append(\"same key with different payload rejected\")\nobservation = {\"calls\": calls, \"effects\": effects, \"events\": events,\n               \"delays\": delays, \"conflictRejected\": conflict_rejected,\n               \"kind\": \"returned\", \"error\": None}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "calls": 2,
+      "effects": [
+        {
+          "key": "job-10-1",
+          "value": 1
+        },
+        {
+          "key": "job-10-2",
+          "value": 1
+        }
+      ],
+      "events": [
+        "call 1",
+        "effect recorded; confirmation lost",
+        "sleep 0.01",
+        "call 2",
+        "confirmation received",
+        "same key with different payload rejected"
+      ],
+      "kind": "returned",
+      "error": null
+    }
+  ],
+  "partial": [
+    {
+      "id": "restart",
+      "label": "失败后从保存步骤重跑",
+      "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import TransientError\n\nwrites = 0\nnotify_attempts = 0\nnotified = False\ncheckpoint = False\nevents = []\nsnapshots = []\n\ndef snapshot(ident):\n    snapshots.append({\"id\": ident, \"writes\": writes,\n                      \"notifyAttempts\": notify_attempts,\n                      \"notified\": notified})\n\ndef save():\n    global writes, checkpoint\n    writes += 1\n    events.append(\"save\")\n    if False:\n        checkpoint = True\n\ndef save_then_notify():\n    global notify_attempts, notified\n    if not checkpoint:\n        save()\n    notify_attempts += 1\n    events.append(\"notify \" + str(notify_attempts))\n    if False or notify_attempts == 1:\n        events.append(\"notification failed\")\n        raise TransientError(\"notification unavailable\")\n    notified = True\n    events.append(\"notification sent\")\n    return \"done\"\n\ndef operation():\n    try:\n        return save_then_notify()\n    except TransientError:\n        if notify_attempts == 1:\n            snapshot(\"failure\")\n        raise\n\nkind, error = \"returned\", None\ntry:\n    retry(operation, attempts=2, sleep=lambda seconds: None)\nexcept TransientError as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\nsnapshot(\"final\")\nobservation = {\"snapshots\": snapshots, \"events\": events,\n               \"kind\": kind, \"error\": error}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "snapshots": [
+        {
+          "id": "failure",
+          "writes": 1,
+          "notifyAttempts": 1,
+          "notified": false
+        },
+        {
+          "id": "final",
+          "writes": 2,
+          "notifyAttempts": 2,
+          "notified": true
+        }
+      ],
+      "events": [
+        "save",
+        "notify 1",
+        "notification failed",
+        "save",
+        "notify 2",
+        "notification sent"
+      ],
+      "kind": "returned",
+      "error": null
+    },
+    {
+      "id": "resume",
+      "label": "记录检查点后跳过已完成保存",
+      "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import TransientError\n\nwrites = 0\nnotify_attempts = 0\nnotified = False\ncheckpoint = False\nevents = []\nsnapshots = []\n\ndef snapshot(ident):\n    snapshots.append({\"id\": ident, \"writes\": writes,\n                      \"notifyAttempts\": notify_attempts,\n                      \"notified\": notified})\n\ndef save():\n    global writes, checkpoint\n    writes += 1\n    events.append(\"save\")\n    if True:\n        checkpoint = True\n\ndef save_then_notify():\n    global notify_attempts, notified\n    if not checkpoint:\n        save()\n    notify_attempts += 1\n    events.append(\"notify \" + str(notify_attempts))\n    if False or notify_attempts == 1:\n        events.append(\"notification failed\")\n        raise TransientError(\"notification unavailable\")\n    notified = True\n    events.append(\"notification sent\")\n    return \"done\"\n\ndef operation():\n    try:\n        return save_then_notify()\n    except TransientError:\n        if notify_attempts == 1:\n            snapshot(\"failure\")\n        raise\n\nkind, error = \"returned\", None\ntry:\n    retry(operation, attempts=2, sleep=lambda seconds: None)\nexcept TransientError as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\nsnapshot(\"final\")\nobservation = {\"snapshots\": snapshots, \"events\": events,\n               \"kind\": kind, \"error\": error}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "snapshots": [
+        {
+          "id": "failure",
+          "writes": 1,
+          "notifyAttempts": 1,
+          "notified": false
+        },
+        {
+          "id": "final",
+          "writes": 1,
+          "notifyAttempts": 2,
+          "notified": true
+        }
+      ],
+      "events": [
+        "save",
+        "notify 1",
+        "notification failed",
+        "notify 2",
+        "notification sent"
+      ],
+      "kind": "returned",
+      "error": null
+    },
+    {
+      "id": "still-fails",
+      "label": "恢复通知但通知持续失败",
+      "code": "import json\nfrom python.solutions.ch10 import retry\nfrom python.task_processor import TransientError\n\nwrites = 0\nnotify_attempts = 0\nnotified = False\ncheckpoint = False\nevents = []\nsnapshots = []\n\ndef snapshot(ident):\n    snapshots.append({\"id\": ident, \"writes\": writes,\n                      \"notifyAttempts\": notify_attempts,\n                      \"notified\": notified})\n\ndef save():\n    global writes, checkpoint\n    writes += 1\n    events.append(\"save\")\n    if True:\n        checkpoint = True\n\ndef save_then_notify():\n    global notify_attempts, notified\n    if not checkpoint:\n        save()\n    notify_attempts += 1\n    events.append(\"notify \" + str(notify_attempts))\n    if True or notify_attempts == 1:\n        events.append(\"notification failed\")\n        raise TransientError(\"notification unavailable\")\n    notified = True\n    events.append(\"notification sent\")\n    return \"done\"\n\ndef operation():\n    try:\n        return save_then_notify()\n    except TransientError:\n        if notify_attempts == 1:\n            snapshot(\"failure\")\n        raise\n\nkind, error = \"returned\", None\ntry:\n    retry(operation, attempts=2, sleep=lambda seconds: None)\nexcept TransientError as caught:\n    kind = \"raised\"\n    error = type(caught).__name__\nsnapshot(\"final\")\nobservation = {\"snapshots\": snapshots, \"events\": events,\n               \"kind\": kind, \"error\": error}\nprint(json.dumps(observation, ensure_ascii=False))\n",
+      "snapshots": [
+        {
+          "id": "failure",
+          "writes": 1,
+          "notifyAttempts": 1,
+          "notified": false
+        },
+        {
+          "id": "final",
+          "writes": 1,
+          "notifyAttempts": 2,
+          "notified": false
+        }
+      ],
+      "events": [
+        "save",
+        "notify 1",
+        "notification failed",
+        "notify 2",
+        "notification failed"
+      ],
+      "kind": "raised",
+      "error": "TransientError"
+    }
+  ]
+}

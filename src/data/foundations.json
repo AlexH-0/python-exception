@@ -1,0 +1,116 @@
+{
+  "pythonVersion": "3.11.15",
+  "phases": [
+    {
+      "id": "syntax",
+      "label": "语法写错",
+      "code": "print('before')\nif True print('broken')\nprint('after')\n",
+      "compiled": false,
+      "stdout": [],
+      "stage": "compile",
+      "error": {
+        "type": "SyntaxError",
+        "message": "invalid syntax (chapter01.py, line 2)",
+        "argsRepr": "('invalid syntax', ('chapter01.py', 2, 9, \"if True print('broken')\\n\", 2, 14))"
+      }
+    },
+    {
+      "id": "runtime",
+      "label": "运行时失败",
+      "code": "print('before')\nnumber = int('pear')\nprint('after', number)\n",
+      "compiled": true,
+      "stdout": [
+        "before"
+      ],
+      "stage": "execute",
+      "error": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'pear'",
+        "argsRepr": "(\"invalid literal for int() with base 10: 'pear'\",)"
+      }
+    },
+    {
+      "id": "valid",
+      "label": "正常完成",
+      "code": "print('before')\nnumber = int('3')\nprint('after', number)\n",
+      "compiled": true,
+      "stdout": [
+        "before",
+        "after 3"
+      ],
+      "stage": "complete",
+      "error": null
+    }
+  ],
+  "objects": [
+    {
+      "id": "value",
+      "label": "ValueError",
+      "code": "try:\n    int('pear')\nexcept Exception as err:\n    observation = {\n        'type': type(err).__name__,\n        'message': str(err),\n        'argsRepr': repr(err.args),\n        'repr': repr(err),\n    }\n    print(observation['type'])\n    print(observation['message'])\n    print(observation['argsRepr'])\n",
+      "operation": "int('pear')",
+      "observation": {
+        "type": "ValueError",
+        "message": "invalid literal for int() with base 10: 'pear'",
+        "argsRepr": "(\"invalid literal for int() with base 10: 'pear'\",)",
+        "repr": "ValueError(\"invalid literal for int() with base 10: 'pear'\")"
+      },
+      "stdout": [
+        "ValueError",
+        "invalid literal for int() with base 10: 'pear'",
+        "(\"invalid literal for int() with base 10: 'pear'\",)"
+      ]
+    },
+    {
+      "id": "type",
+      "label": "TypeError",
+      "code": "try:\n    '3' + 1\nexcept Exception as err:\n    observation = {\n        'type': type(err).__name__,\n        'message': str(err),\n        'argsRepr': repr(err.args),\n        'repr': repr(err),\n    }\n    print(observation['type'])\n    print(observation['message'])\n    print(observation['argsRepr'])\n",
+      "operation": "'3' + 1",
+      "observation": {
+        "type": "TypeError",
+        "message": "can only concatenate str (not \"int\") to str",
+        "argsRepr": "('can only concatenate str (not \"int\") to str',)",
+        "repr": "TypeError('can only concatenate str (not \"int\") to str')"
+      },
+      "stdout": [
+        "TypeError",
+        "can only concatenate str (not \"int\") to str",
+        "('can only concatenate str (not \"int\") to str',)"
+      ]
+    },
+    {
+      "id": "key",
+      "label": "KeyError",
+      "code": "try:\n    {'count': 3}['missing']\nexcept Exception as err:\n    observation = {\n        'type': type(err).__name__,\n        'message': str(err),\n        'argsRepr': repr(err.args),\n        'repr': repr(err),\n    }\n    print(observation['type'])\n    print(observation['message'])\n    print(observation['argsRepr'])\n",
+      "operation": "{'count': 3}['missing']",
+      "observation": {
+        "type": "KeyError",
+        "message": "'missing'",
+        "argsRepr": "('missing',)",
+        "repr": "KeyError('missing')"
+      },
+      "stdout": [
+        "KeyError",
+        "'missing'",
+        "('missing',)"
+      ]
+    }
+  ],
+  "trace": {
+    "code": "import traceback\n\ndef parse_count(text):\n    return int(text)\n\ntry:\n    parse_count('pear')\nexcept ValueError as err:\n    observation = {\n        'type': type(err).__name__,\n        'message': str(err),\n        'frames': [\n            {'name': frame.name, 'line': frame.lineno, 'source': frame.line}\n            for frame in traceback.extract_tb(err.__traceback__)\n            if frame.filename == 'chapter01.py'\n        ],\n        'formatted': ''.join(traceback.format_exception(err)),\n    }\n",
+    "type": "ValueError",
+    "message": "invalid literal for int() with base 10: 'pear'",
+    "frames": [
+      {
+        "name": "<module>",
+        "line": 7,
+        "source": "parse_count('pear')"
+      },
+      {
+        "name": "parse_count",
+        "line": 4,
+        "source": "return int(text)"
+      }
+    ],
+    "formatted": "Traceback (most recent call last):\n  File \"chapter01.py\", line 7, in <module>\n    parse_count('pear')\n  File \"chapter01.py\", line 4, in parse_count\n    return int(text)\n           ^^^^^^^^^\nValueError: invalid literal for int() with base 10: 'pear'\n"
+  }
+}

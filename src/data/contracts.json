@@ -1,0 +1,164 @@
+{
+  "pythonVersion": "3.11.15",
+  "definitions": "import json\n\nclass TaskError(Exception):\n    pass\n\nclass TaskInputError(TaskError):\n    def __init__(self, message, *, task_id, field):\n        if not isinstance(task_id, str) or not task_id:\n            raise ValueError(\"task_id must be a non-empty string\")\n        if field not in {\"document\", \"value\"}:\n            raise ValueError(\"unknown field\")\n        super().__init__(message)\n        self.task_id = task_id\n        self.field = field\n\ndef load_value(text):\n    try:\n        data = json.loads(text)\n    except json.JSONDecodeError as original:\n        raise TaskInputError(\"invalid task JSON\",\n            task_id=\"task-7\", field=\"document\") from original\n    if not isinstance(data, dict) or set(data) != {\"value\"}:\n        raise TaskInputError(\"expected exactly value\",\n            task_id=\"task-7\", field=\"document\")\n    if type(data[\"value\"]) is not int:\n        raise TaskInputError(\"value must be an integer\",\n            task_id=\"task-7\", field=\"value\")\n    return data[\"value\"]\n\ndef run_job(text, *, bug=False):\n    value = load_value(text)\n    if bug:  # 固定教学案例：内部代码写错。\n        return value + \"units\"\n    return value * 2\n",
+  "wrappers": {
+    "normal": "def submit(text, *, bug=False):\n    return run_job(text, bug=bug)\n",
+    "counter": "def submit(text, *, bug=False):\n    try:\n        return run_job(text, bug=bug)\n    except Exception:\n        return 0  # 错误：用成功值代替失败。\n"
+  },
+  "fields": [
+    {
+      "message": "value must be an integer",
+      "args": [
+        "value must be an integer"
+      ],
+      "type": "TaskInputError",
+      "taskId": "task-7",
+      "field": "value",
+      "action": "highlight:value"
+    },
+    {
+      "message": "value 必须是整数",
+      "args": [
+        "value 必须是整数"
+      ],
+      "type": "TaskInputError",
+      "taskId": "task-7",
+      "field": "value",
+      "action": "highlight:value"
+    }
+  ],
+  "cases": [
+    {
+      "id": "valid",
+      "label": "整数 21",
+      "text": "{\"value\":21}",
+      "bug": false,
+      "normal": {
+        "kind": "returned",
+        "value": 42,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      },
+      "counter": {
+        "kind": "returned",
+        "value": 42,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      }
+    },
+    {
+      "id": "zero",
+      "label": "合法的 0",
+      "text": "{\"value\":0}",
+      "bug": false,
+      "normal": {
+        "kind": "returned",
+        "value": 0,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      },
+      "counter": {
+        "kind": "returned",
+        "value": 0,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      }
+    },
+    {
+      "id": "bad_json",
+      "label": "损坏的 JSON",
+      "text": "{",
+      "bug": false,
+      "normal": {
+        "kind": "raised",
+        "value": null,
+        "error": {
+          "type": "TaskInputError",
+          "message": "invalid task JSON"
+        },
+        "cause": {
+          "type": "JSONDecodeError",
+          "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+        },
+        "taskId": "task-7",
+        "field": "document",
+        "expected": true
+      },
+      "counter": {
+        "kind": "returned",
+        "value": 0,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      }
+    },
+    {
+      "id": "boolean",
+      "label": "把 true 当整数",
+      "text": "{\"value\":true}",
+      "bug": false,
+      "normal": {
+        "kind": "raised",
+        "value": null,
+        "error": {
+          "type": "TaskInputError",
+          "message": "value must be an integer"
+        },
+        "cause": null,
+        "taskId": "task-7",
+        "field": "value",
+        "expected": true
+      },
+      "counter": {
+        "kind": "returned",
+        "value": 0,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      }
+    },
+    {
+      "id": "bug",
+      "label": "内部代码写错",
+      "text": "{\"value\":21}",
+      "bug": true,
+      "normal": {
+        "kind": "raised",
+        "value": null,
+        "error": {
+          "type": "TypeError",
+          "message": "unsupported operand type(s) for +: 'int' and 'str'"
+        },
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      },
+      "counter": {
+        "kind": "returned",
+        "value": 0,
+        "error": null,
+        "cause": null,
+        "taskId": null,
+        "field": null,
+        "expected": false
+      }
+    }
+  ]
+}

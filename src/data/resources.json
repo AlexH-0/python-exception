@@ -1,0 +1,688 @@
+{
+  "pythonVersion": "3.11.15",
+  "enter": [
+    {
+      "id": "success",
+      "label": "进入成功",
+      "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=False\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+      "output": [
+        "enter A",
+        "ready A",
+        "body resource:A",
+        "body tail",
+        "exit A: None",
+        "after with"
+      ],
+      "events": [
+        {
+          "kind": "enter",
+          "text": "enter A",
+          "registered": []
+        },
+        {
+          "kind": "ready",
+          "text": "ready A",
+          "registered": []
+        },
+        {
+          "kind": "body",
+          "text": "body resource:A",
+          "registered": []
+        },
+        {
+          "kind": "tail",
+          "text": "body tail",
+          "registered": []
+        },
+        {
+          "kind": "exit",
+          "text": "exit A: None",
+          "registered": []
+        },
+        {
+          "kind": "continued",
+          "text": "after with",
+          "registered": []
+        }
+      ],
+      "exits": [
+        {
+          "name": "A",
+          "type": null,
+          "valueType": null,
+          "message": null,
+          "traceback": false,
+          "sameException": false,
+          "result": false
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "label": "进入失败",
+      "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=True, suppress=False\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+      "output": [
+        "enter A",
+        "enter failed A",
+        "outer caught OSError"
+      ],
+      "events": [
+        {
+          "kind": "enter",
+          "text": "enter A",
+          "registered": []
+        },
+        {
+          "kind": "failed",
+          "text": "enter failed A",
+          "registered": []
+        },
+        {
+          "kind": "caught",
+          "text": "outer caught OSError",
+          "registered": []
+        }
+      ],
+      "exits": []
+    }
+  ],
+  "exit": [
+    {
+      "id": "normal",
+      "label": "正常完成",
+      "propagate": {
+        "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=False\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+        "output": [
+          "enter A",
+          "ready A",
+          "body resource:A",
+          "body tail",
+          "exit A: None",
+          "after with"
+        ],
+        "events": [
+          {
+            "kind": "enter",
+            "text": "enter A",
+            "registered": []
+          },
+          {
+            "kind": "ready",
+            "text": "ready A",
+            "registered": []
+          },
+          {
+            "kind": "body",
+            "text": "body resource:A",
+            "registered": []
+          },
+          {
+            "kind": "tail",
+            "text": "body tail",
+            "registered": []
+          },
+          {
+            "kind": "exit",
+            "text": "exit A: None",
+            "registered": []
+          },
+          {
+            "kind": "continued",
+            "text": "after with",
+            "registered": []
+          }
+        ],
+        "exits": [
+          {
+            "name": "A",
+            "type": null,
+            "valueType": null,
+            "message": null,
+            "traceback": false,
+            "sameException": false,
+            "result": false
+          }
+        ]
+      },
+      "selective": {
+        "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=True\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+        "output": [
+          "enter A",
+          "ready A",
+          "body resource:A",
+          "body tail",
+          "exit A: None",
+          "after with"
+        ],
+        "events": [
+          {
+            "kind": "enter",
+            "text": "enter A",
+            "registered": []
+          },
+          {
+            "kind": "ready",
+            "text": "ready A",
+            "registered": []
+          },
+          {
+            "kind": "body",
+            "text": "body resource:A",
+            "registered": []
+          },
+          {
+            "kind": "tail",
+            "text": "body tail",
+            "registered": []
+          },
+          {
+            "kind": "exit",
+            "text": "exit A: None",
+            "registered": []
+          },
+          {
+            "kind": "continued",
+            "text": "after with",
+            "registered": []
+          }
+        ],
+        "exits": [
+          {
+            "name": "A",
+            "type": null,
+            "valueType": null,
+            "message": null,
+            "traceback": false,
+            "sameException": false,
+            "result": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "ValueError",
+      "label": "抛 ValueError",
+      "propagate": {
+        "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=False\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        raise ValueError(\"work failed\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+        "output": [
+          "enter A",
+          "ready A",
+          "body resource:A",
+          "exit A: ValueError",
+          "outer caught ValueError"
+        ],
+        "events": [
+          {
+            "kind": "enter",
+            "text": "enter A",
+            "registered": []
+          },
+          {
+            "kind": "ready",
+            "text": "ready A",
+            "registered": []
+          },
+          {
+            "kind": "body",
+            "text": "body resource:A",
+            "registered": []
+          },
+          {
+            "kind": "exit",
+            "text": "exit A: ValueError",
+            "registered": []
+          },
+          {
+            "kind": "caught",
+            "text": "outer caught ValueError",
+            "registered": []
+          }
+        ],
+        "exits": [
+          {
+            "name": "A",
+            "type": "ValueError",
+            "valueType": "ValueError",
+            "message": "work failed",
+            "traceback": true,
+            "sameException": true,
+            "result": false
+          }
+        ]
+      },
+      "selective": {
+        "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=True\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        raise ValueError(\"work failed\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+        "output": [
+          "enter A",
+          "ready A",
+          "body resource:A",
+          "exit A: ValueError",
+          "after with"
+        ],
+        "events": [
+          {
+            "kind": "enter",
+            "text": "enter A",
+            "registered": []
+          },
+          {
+            "kind": "ready",
+            "text": "ready A",
+            "registered": []
+          },
+          {
+            "kind": "body",
+            "text": "body resource:A",
+            "registered": []
+          },
+          {
+            "kind": "exit",
+            "text": "exit A: ValueError",
+            "registered": []
+          },
+          {
+            "kind": "continued",
+            "text": "after with",
+            "registered": []
+          }
+        ],
+        "exits": [
+          {
+            "name": "A",
+            "type": "ValueError",
+            "valueType": "ValueError",
+            "message": "work failed",
+            "traceback": true,
+            "sameException": true,
+            "result": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "TypeError",
+      "label": "抛 TypeError",
+      "propagate": {
+        "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=False\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        raise TypeError(\"work failed\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+        "output": [
+          "enter A",
+          "ready A",
+          "body resource:A",
+          "exit A: TypeError",
+          "outer caught TypeError"
+        ],
+        "events": [
+          {
+            "kind": "enter",
+            "text": "enter A",
+            "registered": []
+          },
+          {
+            "kind": "ready",
+            "text": "ready A",
+            "registered": []
+          },
+          {
+            "kind": "body",
+            "text": "body resource:A",
+            "registered": []
+          },
+          {
+            "kind": "exit",
+            "text": "exit A: TypeError",
+            "registered": []
+          },
+          {
+            "kind": "caught",
+            "text": "outer caught TypeError",
+            "registered": []
+          }
+        ],
+        "exits": [
+          {
+            "name": "A",
+            "type": "TypeError",
+            "valueType": "TypeError",
+            "message": "work failed",
+            "traceback": true,
+            "sameException": true,
+            "result": false
+          }
+        ]
+      },
+      "selective": {
+        "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with Resource(\n        \"A\", fail=False, suppress=True\n    ) as value:\n        emit(\"body\", \"body \" + value)\n        raise TypeError(\"work failed\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+        "output": [
+          "enter A",
+          "ready A",
+          "body resource:A",
+          "exit A: TypeError",
+          "outer caught TypeError"
+        ],
+        "events": [
+          {
+            "kind": "enter",
+            "text": "enter A",
+            "registered": []
+          },
+          {
+            "kind": "ready",
+            "text": "ready A",
+            "registered": []
+          },
+          {
+            "kind": "body",
+            "text": "body resource:A",
+            "registered": []
+          },
+          {
+            "kind": "exit",
+            "text": "exit A: TypeError",
+            "registered": []
+          },
+          {
+            "kind": "caught",
+            "text": "outer caught TypeError",
+            "registered": []
+          }
+        ],
+        "exits": [
+          {
+            "name": "A",
+            "type": "TypeError",
+            "valueType": "TypeError",
+            "message": "work failed",
+            "traceback": true,
+            "sameException": true,
+            "result": false
+          }
+        ]
+      }
+    }
+  ],
+  "stack": [
+    {
+      "id": "normal",
+      "label": "两个资源都成功",
+      "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with ExitStack() as stack:\n        first = stack.enter_context(\n            Resource(\"A\"))\n        registered.append(\"A\")\n        emit(\"register\", \"register A\")\n        second = stack.enter_context(\n            Resource(\"B\", fail=False))\n        registered.append(\"B\")\n        emit(\"register\", \"register B\")\n        emit(\"body\", \"body\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+      "output": [
+        "enter A",
+        "ready A",
+        "register A",
+        "enter B",
+        "ready B",
+        "register B",
+        "body",
+        "body tail",
+        "exit B: None",
+        "exit A: None",
+        "after with"
+      ],
+      "events": [
+        {
+          "kind": "enter",
+          "text": "enter A",
+          "registered": []
+        },
+        {
+          "kind": "ready",
+          "text": "ready A",
+          "registered": []
+        },
+        {
+          "kind": "register",
+          "text": "register A",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "enter",
+          "text": "enter B",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "ready",
+          "text": "ready B",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "register",
+          "text": "register B",
+          "registered": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "body",
+          "text": "body",
+          "registered": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "tail",
+          "text": "body tail",
+          "registered": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "exit",
+          "text": "exit B: None",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "exit",
+          "text": "exit A: None",
+          "registered": []
+        },
+        {
+          "kind": "continued",
+          "text": "after with",
+          "registered": []
+        }
+      ],
+      "exits": [
+        {
+          "name": "B",
+          "type": null,
+          "valueType": null,
+          "message": null,
+          "traceback": false,
+          "sameException": false,
+          "result": false
+        },
+        {
+          "name": "A",
+          "type": null,
+          "valueType": null,
+          "message": null,
+          "traceback": false,
+          "sameException": false,
+          "result": false
+        }
+      ]
+    },
+    {
+      "id": "enter-fail",
+      "label": "B 进入失败",
+      "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with ExitStack() as stack:\n        first = stack.enter_context(\n            Resource(\"A\"))\n        registered.append(\"A\")\n        emit(\"register\", \"register A\")\n        second = stack.enter_context(\n            Resource(\"B\", fail=True))\n        registered.append(\"B\")\n        emit(\"register\", \"register B\")\n        emit(\"body\", \"body\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+      "output": [
+        "enter A",
+        "ready A",
+        "register A",
+        "enter B",
+        "enter failed B",
+        "exit A: OSError",
+        "outer caught OSError"
+      ],
+      "events": [
+        {
+          "kind": "enter",
+          "text": "enter A",
+          "registered": []
+        },
+        {
+          "kind": "ready",
+          "text": "ready A",
+          "registered": []
+        },
+        {
+          "kind": "register",
+          "text": "register A",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "enter",
+          "text": "enter B",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "failed",
+          "text": "enter failed B",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "exit",
+          "text": "exit A: OSError",
+          "registered": []
+        },
+        {
+          "kind": "caught",
+          "text": "outer caught OSError",
+          "registered": []
+        }
+      ],
+      "exits": [
+        {
+          "name": "A",
+          "type": "OSError",
+          "valueType": "OSError",
+          "message": "cannot acquire B",
+          "traceback": true,
+          "sameException": true,
+          "result": false
+        }
+      ]
+    },
+    {
+      "id": "body-fail",
+      "label": "使用时失败",
+      "code": "from contextlib import ExitStack\n\nevents, exits, registered = [], [], []\n\ndef emit(kind, text):\n    events.append({\"kind\": kind, \"text\": text,\n                   \"registered\": registered.copy()})\n    print(text)\n\nclass Resource:\n    def __init__(self, name, *, fail=False, suppress=False):\n        self.name, self.fail, self.suppress = name, fail, suppress\n\n    def __enter__(self):\n        emit(\"enter\", f\"enter {self.name}\")\n        if self.fail:\n            emit(\"failed\", f\"enter failed {self.name}\")\n            raise OSError(\"cannot acquire \" + self.name)\n        emit(\"ready\", f\"ready {self.name}\")\n        return \"resource:\" + self.name\n\n    def __exit__(self, kind, value, tb):\n        result = self.suppress and kind is ValueError\n        exits.append({\"name\": self.name,\n                      \"type\": kind.__name__ if kind else None,\n                      \"valueType\": type(value).__name__ if value is not None else None,\n                      \"message\": str(value) if value is not None else None,\n                      \"traceback\": tb is not None,\n                      \"sameException\": value is not None and kind is type(value),\n                      \"result\": result})\n        if self.name in registered:\n            registered.remove(self.name)\n        emit(\"exit\", f\"exit {self.name}: {kind.__name__ if kind else 'None'}\")\n        return result\n\ntry:\n    with ExitStack() as stack:\n        first = stack.enter_context(\n            Resource(\"A\"))\n        registered.append(\"A\")\n        emit(\"register\", \"register A\")\n        second = stack.enter_context(\n            Resource(\"B\", fail=False))\n        registered.append(\"B\")\n        emit(\"register\", \"register B\")\n        emit(\"body\", \"body\")\n        raise ValueError(\"work failed\")\n        emit(\"tail\", \"body tail\")\n    emit(\"continued\", \"after with\")\nexcept Exception as error:\n    emit(\"caught\", \"outer caught \" + type(error).__name__)\n",
+      "output": [
+        "enter A",
+        "ready A",
+        "register A",
+        "enter B",
+        "ready B",
+        "register B",
+        "body",
+        "exit B: ValueError",
+        "exit A: ValueError",
+        "outer caught ValueError"
+      ],
+      "events": [
+        {
+          "kind": "enter",
+          "text": "enter A",
+          "registered": []
+        },
+        {
+          "kind": "ready",
+          "text": "ready A",
+          "registered": []
+        },
+        {
+          "kind": "register",
+          "text": "register A",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "enter",
+          "text": "enter B",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "ready",
+          "text": "ready B",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "register",
+          "text": "register B",
+          "registered": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "body",
+          "text": "body",
+          "registered": [
+            "A",
+            "B"
+          ]
+        },
+        {
+          "kind": "exit",
+          "text": "exit B: ValueError",
+          "registered": [
+            "A"
+          ]
+        },
+        {
+          "kind": "exit",
+          "text": "exit A: ValueError",
+          "registered": []
+        },
+        {
+          "kind": "caught",
+          "text": "outer caught ValueError",
+          "registered": []
+        }
+      ],
+      "exits": [
+        {
+          "name": "B",
+          "type": "ValueError",
+          "valueType": "ValueError",
+          "message": "work failed",
+          "traceback": true,
+          "sameException": true,
+          "result": false
+        },
+        {
+          "name": "A",
+          "type": "ValueError",
+          "valueType": "ValueError",
+          "message": "work failed",
+          "traceback": true,
+          "sameException": true,
+          "result": false
+        }
+      ]
+    }
+  ]
+}

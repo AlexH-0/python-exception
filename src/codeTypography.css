@@ -1,0 +1,32 @@
+@font-face {
+  font-family: 'Course Mono';
+  src: url('./assets/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+.sample-chapter { --course-mono: 'Course Mono', 'Cascadia Code', Consolas, 'Microsoft YaHei', monospace; }
+.sample-chapter code, .sample-chapter pre { font-family: var(--course-mono); font-variant-ligatures: none; }
+.sample-chapter .codebox pre,
+.sample-chapter .sample-tutor .codebox pre,
+.sample-chapter .lab .codebox pre { font-size: 14px; line-height: 1.85; letter-spacing: -.015em; }
+.sample-chapter .codebox { background: #f8faf8; }
+.sample-chapter .codebox .code-label { font-family: var(--course-mono); font-size: 11px; letter-spacing: .015em; }
+.sample-chapter .codebox .line-number { font-family: var(--course-mono); font-size: 10px; min-width: 38px; padding-right: 12px; color: #7b8682; }
+.sample-chapter .code-source { color: #293d42; }
+.sample-chapter .syntax-keyword { color: #795082; }
+.sample-chapter .syntax-function, .sample-chapter .syntax-builtin { color: #176b60; }
+.sample-chapter .syntax-class-name { color: #955222; }
+.sample-chapter .syntax-landmark { color: #305f91; }
+.sample-chapter .syntax-string, .sample-chapter .syntax-triple-quoted-string, .sample-chapter .syntax-string-interpolation { color: #686141; }
+.sample-chapter .syntax-comment { color: #697773; font-style: italic; }
+.sample-chapter .syntax-number, .sample-chapter .syntax-boolean { color: #955222; }
+.sample-chapter .syntax-punctuation, .sample-chapter .syntax-operator { color: #526365; }
+.sample-chapter .sample-console pre, .sample-chapter .chain-display pre { font-size: 13px; line-height: 1.85; }
+.sample-chapter .sample-frame dl { font-family: var(--course-mono); font-size: 13px; }
+@media(max-width:650px) {
+  .sample-chapter .codebox pre,
+  .sample-chapter .sample-tutor .codebox pre,
+  .sample-chapter .lab .codebox pre { font-size: 13px; }
+  .sample-chapter .codebox .line-number { min-width: 31px; width: 31px; padding-right: 9px; }
+}
